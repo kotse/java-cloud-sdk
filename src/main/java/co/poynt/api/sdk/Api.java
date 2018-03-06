@@ -1,21 +1,22 @@
 package co.poynt.api.sdk;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import co.poynt.api.model.Code;
+import co.poynt.api.model.ErrorInfo;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 
-import co.poynt.api.model.Code;
-import co.poynt.api.model.ErrorInfo;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public abstract class Api {
 	protected PoyntSdk sdk;
@@ -138,11 +139,12 @@ public abstract class Api {
 		return result;
 	}
 
-	public <T> T getFromBusiness(Class<T> resourceType, String businessId) {
+	public <T> T getFromBusiness(Class<T> resourceType, String businessId, Map<String, Object> params) {
 		String accessToken = sdk.getAccessToken();
 
 		String baseUrl = this.endPoint.replace("{businessId}", businessId);
-		HttpGet get = this.createGetRequest(baseUrl);
+
+		HttpGet get = this.createGetRequest(constructURL(baseUrl, params));
 
 		get.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 		T result = null;
@@ -247,5 +249,17 @@ public abstract class Api {
 		}
 
 		return result;
+	}
+
+	private String constructURL(String baseUrl, Map<String, Object> params) {
+		try {
+			URIBuilder uriBuilder = new URIBuilder(baseUrl);
+			params.forEach((k, v) -> uriBuilder.addParameter(k, v.toString()));
+
+			return uriBuilder.toString();
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+			throw new PoyntSdkException("Cannot construct URL");
+		}
 	}
 }
