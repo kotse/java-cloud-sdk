@@ -138,6 +138,30 @@ public abstract class Api {
 		return result;
 	}
 
+	public <T> T getFromBusiness(Class<T> resourceType, String businessId) {
+		String accessToken = sdk.getAccessToken();
+
+		String baseUrl = this.endPoint.replace("{businessId}", businessId);
+		HttpGet get = this.createGetRequest(baseUrl);
+
+		get.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+		T result = null;
+		try {
+			HttpResponse response = this.sdk.getHttpClient().execute(get);
+			if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+				result = (T) this.readResponse(response, resourceType);
+			} else {
+				handleError(response);
+			}
+		} catch (IOException e) {
+			throw new PoyntSdkException("Failed to get resource.");
+		} finally {
+			get.releaseConnection();
+		}
+
+		return result;
+	}
+
 	public <T> List<T> getAllFromBusiness(Class<T> resourceType, String businessId) {
 		List<T> result = null;
 		String accessToken = sdk.getAccessToken();
